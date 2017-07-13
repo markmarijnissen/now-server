@@ -1,102 +1,77 @@
 # now-server
 
-Creates a local development server for `now alias [domain] -r rules.json`.
+Create a proxy sever from a `rules.json` following specifications in https://zeit.co/docs/features/path-aliases. The server will behave identical
+to `now alias [your-domain.com] -r rules.json`.
 
-This is only a proxy server, it will not spawn microservices for you. See (micro-cluster)[https://github.com/zeit/micro-cluster] if you want that.
+It will **not** manage your microservices, but this is easy to configure with [pm2](http://pm2.keymetrics.io/).
 
-## Installation
+## Getting Started
 
 ```bash
-## global installation
-npm install -g now-server
-
-## local installation
-npm install --save-dev now-server
+npm install -g now-server pm2
 ```
 
-For local installation, add a script in your `package.json`:
-```json
-{
-  "scripts":{
-    "start":"now-server -r rules.json -p 3000"
-  }
-}
-```
+Create a `rules.json` with
 
-Create a `rules.json` following specifications in https://zeit.co/docs/features/path-aliases, for example:
+* [rules](https://zeit.co/docs/features/path-aliases)
+* [apps](http://pm2.keymetrics.io/docs/usage/application-declaration/)
+
+For example:
 
 ```json
 {
+  "apps" : [{
+    "name"        : "now-server",
+    "script"      : "node_modules/.bin/now-server",
+    "args"        : "-r rules.json",
+    "watch"       : ["rules.json"]
+  },{
+    "name"        : "service1",
+    "script"      : "service1/index.js",
+    "watch"       : ["service1"],
+    "env": {
+        "PORT":3001
+    }
+  },{
+    "name"        : "service2",
+    "script"      : "service2/index.js",
+    "watch"       : ["service2"],
+    "env": {
+        "PORT":3002
+    }
+  }],
   "rules": [
     {
       "dest": "http://localhost:3001",
-      "pathname": "/users"
+      "pathname": "/service1"
     },
     {
-      "dest": "http://localhost:3002"
+      "dest": "http://localhost:3002",
+      "pathname": "/service2"
     }
   ]
 }
 ```
 
+The `apps` part follows the pm2 [application declaration](http://pm2.keymetrics.io/docs/usage/application-declaration/).
+
 ## Usage
 ```bash
-## global installation
-npm install -g now-server
+# proxy server only
 now-server -r rules.json -p 3000
 
-## local installation
-npm run start
+# proxy server with microservices
+pm2 start rules.json
+
+pm2 ls    # status
+pm2 kill  # kill it
 ```
 
-## Running now-server with a bunch of microservices
+## Changelog
 
-Use PM2 to run your microservices.
+0.3.0
 
-```
-npm install --save pm2
-```
+- Add not found handling
+- Don't prepend path of destination (now does not do that either!)
 
-Change your startup script in `package.json`
-```json
-{
-  "scripts":{
-    "start":"pm2 start services.json",
-    "pm2":"pm2",
-  }
-}
-```
-
-Create a `services.json` that describes your microservices:
-```json
-{
-  "apps" : [{
-    "name"        : "now-server",
-    "script"      : "now-server",
-    "args"        : "-r ./rules.json",
-    "watch"       : true
-  },{
-    "name"        : "users",
-    "script"      : "./users/your-user-server.js",
-    "watch"       : true,
-    "env": {
-      "PORT":3001
-    }
-  },{
-    "name"        : "app",
-    "script"      : "./app/your-app-server.js",
-    "watch"       : false,
-    "env": {
-      "PORT":3002
-    }
-  }]
-}
-```
-
-Now you can start now-server with all microservices:
-```bash
-npm start
-npm run pm2 -- ls
-npm run pm2 -- kill
-# etc
-```
+0.2.1 - bugfix to make script run with node

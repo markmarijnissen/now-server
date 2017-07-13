@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const http = require('http'),
       httpProxy = require('http-proxy'),
       HttpProxyRules = require('http-proxy-rules');
@@ -34,15 +35,21 @@ rules.forEach(rule => {
 const proxyRules = new HttpProxyRules(config);
 const proxy = httpProxy.createProxy({
   changeOrigin: true,
+  prependPath: false,
   target: {
       https: true
-    }
+  }
 });
 
 http.createServer((req, res) => {
-  return proxy.web(req, res, {
-    target: proxyRules.match(req) || config.default
-  });
+  let target = proxyRules.match(req) || config.default;
+  if(target) {
+    return proxy.web(req, res, {
+      target: target
+    });
+  }
+  res.statusCode = 404;
+  return res.end("Not found");
 }).listen(port,err => {
   if(err) {
     console.log("now-server failed to start:",err);
