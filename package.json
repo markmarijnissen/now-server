@@ -1,6 +1,6 @@
 {
   "name": "now-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -14,7 +14,6 @@
   "dependencies": {
     "commander": "^2.11.0",
     "http-proxy": "^1.16.2",
-    "http-proxy-rules": "^1.1.0",
     "minimatch": "^3.0.4"
   }
 }

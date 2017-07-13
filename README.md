@@ -69,6 +69,10 @@ pm2 kill  # kill it
 
 ## Changelog
 
+0.4.0
+
+- bugfix broken path forwarding
+
 0.3.0
 
 - Add not found handling

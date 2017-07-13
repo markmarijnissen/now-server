@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const http = require('http'),
       httpProxy = require('http-proxy'),
-      HttpProxyRules = require('http-proxy-rules');
       minimatch = require('minimatch'),
       program = require('commander'),
       package = require('./package.json'),
@@ -13,6 +12,7 @@ program
               "  See: https://zeit.co/docs/features/path-aliases")
   .option('-r, --rules [rules.json]','rules.json')
   .option('-p, --port','port number (default: 3000)')
+  .option('-l, --log','log requests')
   .parse(process.argv);
 
 if (!program.rules) {
@@ -20,29 +20,28 @@ if (!program.rules) {
   return
 }
 
-
 const port = program.port || process.env.PORT || 3000;
-const config = { rules: { } };
-const rules = require(path.resolve(process.cwd(),program.rules || process.env.RULES || 'rules.json')).rules;
-rules.forEach(rule => {
-  if(!rule.pathname) {
-    config.default = rule.dest;
-  } else {
-    config.rules[minimatch.makeRe(rule.pathname).source] = rule.dest;
-  }
-});
+const filename = path.resolve(process.cwd(),program.rules || process.env.RULES || 'rules.json');
+const rules = require(filename).rules.map(rule => ({
+  regex: rule.pathname ? minimatch.makeRe(rule.pathname) : /.*/,
+  target: rule.dest
+}));
 
-const proxyRules = new HttpProxyRules(config);
 const proxy = httpProxy.createProxy({
   changeOrigin: true,
-  prependPath: false,
   target: {
       https: true
   }
 });
 
 http.createServer((req, res) => {
-  let target = proxyRules.match(req) || config.default;
+  let target;
+  for(let i = 0; !target && i < rules.length; i++) {
+    if(rules[i].regex.test(req.url)) target = rules[i].target;
+  }
+  if(program.log) {
+    console.log(`${req.method} ${req.url} > ${target ? target + req.url : 'Not found'}`);
+  }
   if(target) {
     return proxy.web(req, res, {
       target: target
