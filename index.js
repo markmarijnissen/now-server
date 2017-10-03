@@ -11,7 +11,7 @@ program
   .description("A development server for `now alias <domain> -r <rules.json>`\n"+
               "  See: https://zeit.co/docs/features/path-aliases")
   .option('-r, --rules [rules.json]','rules.json')
-  .option('-p, --port','port number (default: 3000)')
+  .option('-p, --port [port]','port number (default: 3000)')
   .option('-l, --log','log requests')
   .parse(process.argv);
 
